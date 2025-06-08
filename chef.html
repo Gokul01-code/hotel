@@ -1,134 +1,58 @@
+<!-- chef.html (Chef Panel) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chef Panel - Mobile View</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chef Panel</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #1e1b39, #322860);
-      color: #fff;
-      padding: 1rem;
-      margin: 0;
-    }
-
-    h1 {
-      text-align: center;
-      font-size: 1.5rem;
-      color: #bfaaff;
-      margin-bottom: 1rem;
-    }
-
-    .orders-container {
-      background: #251f47;
-      padding: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 0 12px #7c5acf88;
-    }
-
-    .order {
-      background: #322860;
-      margin-bottom: 1rem;
-      padding: 0.8rem;
-      border-radius: 10px;
-      box-shadow: 0 0 8px #6e52e688;
-    }
-
-    .order-title {
-      font-weight: 600;
-      font-size: 1.1rem;
-      color: #f2eaff;
-      margin-bottom: 0.5rem;
-    }
-
-    .order-items {
-      margin-left: 1rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .order-items li {
-      font-size: 0.95rem;
-      line-height: 1.4;
-    }
-
-    .complete-btn {
-      background: #8a63ff;
-      color: white;
-      border: none;
-      padding: 0.7rem 1rem;
-      font-weight: bold;
-      border-radius: 10px;
-      cursor: pointer;
-      width: 100%;
-      transition: background 0.3s;
-    }
-
-    .complete-btn:hover {
-      background: #a08bff;
-    }
-
-    .no-orders {
-      text-align: center;
-      font-size: 1rem;
-      color: #d1c1ff;
-      margin-top: 2rem;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .order { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+    button { padding: 5px 10px; margin-top: 5px; }
   </style>
 </head>
 <body>
+  <h1>Chef Panel</h1>
+  <div id="orders-container"></div>
 
-<h1>Chef Panel</h1>
-<div class="orders-container" id="orders-container">
-  <!-- Orders will be shown here -->
-</div>
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzBMmIVgdN6K0tEEFA_mU_9LtIXXp6VbNhnfScQlLGZIMBPoPDklAdqm0pg_WJ_i6_H/exec";
 
-<script>
-  const ordersContainer = document.getElementById("orders-container");
-
-  function getPendingOrders() {
-    return JSON.parse(localStorage.getItem("pendingOrders") || "[]");
-  }
-
-  function savePendingOrders(orders) {
-    localStorage.setItem("pendingOrders", JSON.stringify(orders));
-  }
-
-  function renderOrders() {
-    const orders = getPendingOrders();
-    ordersContainer.innerHTML = "";
-
-    if (orders.length === 0) {
-      ordersContainer.innerHTML = `<div class="no-orders">No pending orders</div>`;
-      return;
+    async function fetchOrders() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      const pending = data.filter(order => order.status === "Pending");
+      displayOrders(pending);
     }
 
-    orders.forEach((order, index) => {
-      const orderDiv = document.createElement("div");
-      orderDiv.className = "order";
-      const items = order.map(i => `<li>${i.name} × ${i.quantity}</li>`).join("");
-      orderDiv.innerHTML = `
-        <div class="order-title">Order #${index + 1}</div>
-        <ul class="order-items">${items}</ul>
-        <button class="complete-btn" onclick="completeOrder(${index})">Complete Order</button>
-      `;
-      ordersContainer.appendChild(orderDiv);
-    });
-  }
+    function displayOrders(orders) {
+      const container = document.getElementById("orders-container");
+      container.innerHTML = "";
 
-  function completeOrder(index) {
-    const orders = getPendingOrders();
-    orders.splice(index, 1);
-    savePendingOrders(orders);
-    renderOrders();
-  }
+      if (orders.length === 0) {
+        container.innerHTML = `<p>No pending orders</p>`;
+        return;
+      }
 
-  renderOrders();
+      orders.forEach(order => {
+        const orderDiv = document.createElement("div");
+        orderDiv.className = "order";
+        orderDiv.innerHTML = `
+          <h3>Order #${order.id}</h3>
+          <ul>${order.items.map(i => `<li>${i.name} × ${i.quantity}</li>`).join("")}</ul>
+          <button onclick="markComplete(${order.id})">Mark as Complete</button>
+        `;
+        container.appendChild(orderDiv);
+      });
+    }
 
-  // Auto-refresh every 5 seconds
-  setInterval(renderOrders, 5000);
-</script>
+    async function markComplete(id) {
+      await fetch(`${API_URL}?id=${id}&action=completeOrder`);
+      fetchOrders();
+    }
 
+    fetchOrders();
+    setInterval(fetchOrders, 5000);
+  </script>
 </body>
 </html>
